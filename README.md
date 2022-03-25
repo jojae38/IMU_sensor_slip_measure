@@ -8,9 +8,9 @@ Sensor_imu와 같이 실행해야 합니다. ROBOT_pose (orientation) 와 IMU_se
 IMU와 로봇 간의 각도 차이가 1.943정도 나오기에 제거해주는 모습
 
 2. geometry_msgs::Twist 를 이용해 /acc_diff 토픽명으로 publish 를 진행하며 다음과 같이 나타냅니다.
-   <br>  *  [angular.x = dθ] 
-   <br>  *  [angular.y = dθ'] 
-   <br>  *  [angular.z = dθ"] 
+* [angular.x = dθ] 
+* [angular.y = dθ'] 
+* [angular.z = dθ"] 
 3. rqt_plot을 실행 후 y 축을 적절히 조정하면 로봇과 IMU 센서 간의 각도차이 및 각도 변화량이 측정 가능합니다.
 ![image](https://user-images.githubusercontent.com/58541374/160034918-8005b8ba-b8f8-4acd-b125-33e26b54124e.png)
 
