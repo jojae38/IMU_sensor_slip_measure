@@ -16,6 +16,9 @@ Sensor_imu와 같이 실행해야 합니다. ROBOT_pose (orientation) 와 IMU_se
 *현재 IMU drift 현상 (가만히 놔 둬도 각도가 찔끔찔끔 변하는 현상) 이 10초에 (+-) 0.0002~0.0003 정도 관측되고 있습니다.
 
 처음 실행시
+
 ![image](https://user-images.githubusercontent.com/58541374/160035016-56a5da68-631f-49f8-87fa-3455789f9c81.png)
+
 움직이지 않았는데 20초 후 변화한 각도
+
 ![image](https://user-images.githubusercontent.com/58541374/160035045-2b010514-8ba8-4992-8e84-7172cca5cd06.png)
