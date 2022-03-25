@@ -1,0 +1,5 @@
+KERNEL == "ttyUSB*", ATTRS{idVendor} == "10c4", ATTRS{idProduct}=="ea60", MODE:="777", GROUP:="dialout", SYMLINK += "IMU_sensor", ATTRS{product}=="CP2102N USB to UART Bridge Controller"
+
+KERNEL == "ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="777",GROUP:="dialout", SYMLINK += "Ydlidar1" , ATTRS{devpath}=="2.2.2"
+
+KERNEL == "ttyUSB*", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE:="777",GROUP:="dialout", SYMLINK += "Ydlidar2" , ATTRS{devpath}=="2.2.3"
