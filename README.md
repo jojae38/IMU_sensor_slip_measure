@@ -1,6 +1,7 @@
 # IMU_sensor_slip_measure
 
 Sensor_imu와 같이 실행해야 합니다. ROBOT_pose (orientation) 와 IMU_sensor(orientation) callback 이 모두 들어오는 시점에서 실행됩니다.
+처음 코드를 실행 시 로봇을 움직이지 말고 2초간 놔 두시길 권장합니다.
 
 1. callback 이 모두 들어온 경우 1초간 양쪽의 orientation 값을 이용해 차를 구한 후 해당 값을 0으로 맞춰줍니다.
 ![image](https://user-images.githubusercontent.com/58541374/160034868-fa3bb3fe-fa37-4f09-8b36-ed8616f15fd5.png)
