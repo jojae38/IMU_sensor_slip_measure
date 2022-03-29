@@ -1,0 +1,94 @@
+<launch>
+  <node name="imu_visualize" pkg="imu_visualize" type="imu_visualize" output="screen">
+    <param name="Slip" value="0.1" />
+    <param name="notinit" value ="1"/>
+  </node>
+
+  <!-- <node name="settings_script" pkg="serialIMU" type="initialSettings.sh" output="screen"/> -->
+</launch>
+<!--      
+        SET_BAUDRATE
+          1 : 9600bps
+          2 : 19200bps
+          3 : 38400bps
+          4 : 57600bps
+          5 : 115200bps
+          6 : 230400bps
+          7 : 460800bps
+          8 : 921600bps
+          ( default : 5 )
+
+        SET_OUTPUT_RATE
+          1 ~ 1000 Hz
+          0 : polling mode
+
+        SET_OUTPUT_FORMAT
+          1: Euler Angles
+          2: Quaternion
+          (default : 1)
+        
+        SET_OUTPUT_GYRO
+          0 : No output
+          1 : output
+          (default : 0)
+        
+        SET_OUTPUT_ACCELERO
+          0 : No output
+          1 : ACCELEROMETER output
+          2 : Gravity deleted ACCELERO ( Local )
+          3 : Gravity deleted ACCELERO ( Global )
+          4 : Velocity ( Local )
+          5 : Velocity ( Global )
+          (default : 0)
+        
+        SET_OUTPUT_DISTANCE
+          0 : No output
+          1 : DISTANCE ( Local )
+          2 : DISTANCE ( Global )
+          (default : 0)
+        
+        SET_SENS_GYRO
+          1 : 125dps
+          2 : 250dps
+          3 : 500dps
+          4 : 1000dps
+          5 : 2000dps
+          (default : 5)
+        
+        SET_SENS_ACCELERO
+          1 : 3g
+          2 : 6g
+          3 : 12g
+          4 : 24g
+          (default : 3)
+        
+        SET_Low_Pass_Filter_Gyroscope
+          0 : 12Hz (ODR 100Hz)
+          1 : 23Hz (ODR 200Hz)
+          2 : 32Hz (ODR 100Hz)
+          3 : 47Hz (ODR 400Hz)
+          4 : 64Hz (ODR 200Hz)
+          5 : 116Hz (ODR 1000Hz)
+          6 : 230Hz (ODR 1000Hz)
+          7 : 532Hz (ODR 1000Hz)
+          (default : 3)
+        
+        SET_Low_Pass_Filter_Accelerometer
+          0 : 1Hz (ODR 12.5Hz)
+          1 : 3Hz (ODR 25Hz)
+          2 : 5Hz (ODR 50Hz)
+          3 : 10Hz (ODR 100Hz)
+          4 : 20Hz (ODR 200Hz)
+          5 : 40Hz (ODR 400Hz)
+          6 : 80Hz (ODR 800Hz)
+          7 : 145Hz (ODR 1000Hz)
+          8 : 234Hz (ODR 1000Hz)
+          9 : 280Hz (ODR 1000Hz)
+          (default : 5)
+        
+        POWER_ON_START
+          0 : SENSOR NOT START ON POWER
+          1 : SENSOR START ON POWER
+          (default : 1)
+
+-->
