@@ -16,32 +16,13 @@ IMU_visual::IMU_visual()
     init_diff=0;
     adjust_diff=0;
 
-    curr_dp_th=0;
-    prev_dp_th=0;
-
-    curr_dpp_th=0;
-    prev_dpp_th=0;
-
     vector<double> temp(3);
-    vector<IMU_val> temp_val(3);
+    vector<sensor_msgs::Imu> temp_val(4);
     slip_timer=temp;
     slip_d_val=temp_val;
     index=0;
 
-    // Robot_Color_={100,220,100};
-    // IMU_Color_={220,100,100};
-    //  word={255,204,255};
-
-    IMU_.orientation.x=0;
-    IMU_.orientation.y=0;
-    IMU_.orientation.z=0;
-    IMU_.orientation.w=0;
-
-    ROBOT_.orientation.x=0;
-    ROBOT_.orientation.y=0;
-    ROBOT_.orientation.z=0;
-    ROBOT_.orientation.w=0;
-
+    memset(&diff_info_,0,sizeof(struct diff_info));
     _pub_robot_adjust=_nh.advertise<geometry_msgs::Pose>("/robot_adjust_byslip",1);
     _pub_differ=_nh.advertise<geometry_msgs::Twist>("/acc_diff",1);
     _sub_imu_data=_nh.subscribe("/imu_read",1, &IMU_visual::update_IMU, this);
@@ -73,17 +54,13 @@ void IMU_visual::run_sequence()
             else
             {
                 calc_slip_time();
+                
             }
-            
+            turn_curr_to_prev();
         }
         rate.sleep();
         ros::spinOnce();
     }
-}
-void IMU_visual::update_IMU(const sensor_msgs::Imu::ConstPtr &msg)
-{
-    IMU_=*msg;
-    imu_callback=true;
 }
 void IMU_visual::get_init_val()
 {
@@ -91,7 +68,7 @@ void IMU_visual::get_init_val()
     {
         if(init_th.size()<=30)
         {
-            init_th.push_back(curr_th_diff);
+            init_th.push_back(diff_info_.curr_Q_yaw);
         }
         else
         {
@@ -104,55 +81,54 @@ void IMU_visual::get_init_val()
         }
     }
 }
+void IMU_visual::update_IMU(const sensor_msgs::Imu::ConstPtr &msg)
+{
+    diff_info_.Imu_val=*msg;
+    imu_callback=true;
+}
 void IMU_visual::update_ROBOT(const geometry_msgs::Pose::ConstPtr &msg)
 {
-    ROBOT_=*msg;
+    diff_info_.Robot_val=*msg;
     robot_callback=true;
 }
 void IMU_visual::adjust_ROBOT(const geometry_msgs::Pose::ConstPtr &msg)
 {
-    ROBOT_.orientation.x+=msg->orientation.x;
-    ROBOT_.orientation.y+=msg->orientation.y;
-    ROBOT_.orientation.z+=msg->orientation.z;
-    ROBOT_.orientation.w+=msg->orientation.w;
+    diff_info_.Robot_val.orientation.x+=msg->orientation.x;
+    diff_info_.Robot_val.orientation.y+=msg->orientation.y;
+    diff_info_.Robot_val.orientation.z+=msg->orientation.z;
+    diff_info_.Robot_val.orientation.w+=msg->orientation.w;
 }
 void IMU_visual::calc_slip_time()
 {
     if(slip==false)
     {
-        if(abs(curr_dpp_th)>_slip_rate)
+        if(abs(diff_info_.curr_ddQ_yaw)>_slip_rate)//?
         {
             slip=true;
             slip_timer[0]=return_current_time();
-            slip_d_val[0].ori_x=IMU_.orientation.x;
-            slip_d_val[0].ori_y=IMU_.orientation.y;
-            slip_d_val[0].ori_z=IMU_.orientation.z;
-            slip_d_val[0].ori_w=IMU_.orientation.w;
+            slip_d_val[0]=diff_info_.Imu_val;
             index++;
         }
     }
     else
     {
         bool run=false;
-        if(curr_dpp_th==0)
+        if(diff_info_.curr_ddQ_yaw==0)
         {
             run=true;
         }
-        else if(curr_dpp_th>0&&prev_dpp_th<0)
+        else if(diff_info_.curr_ddQ_yaw>0&&diff_info_.prev_ddQ_yaw<0)
         {
             run=true;
         }
-        else if(curr_dpp_th<0&&prev_dpp_th>0)
+        else if(diff_info_.curr_ddQ_yaw<0&&diff_info_.prev_ddQ_yaw>0)
         {
             run=true;
         }
         if(run)
         {
             slip_timer[index]=return_current_time();
-            slip_d_val[index].ori_x=IMU_.orientation.x;
-            slip_d_val[index].ori_y=IMU_.orientation.y;
-            slip_d_val[index].ori_z=IMU_.orientation.z;
-            slip_d_val[index].ori_w=IMU_.orientation.w;
+            slip_d_val[index]=diff_info_.Imu_val;
             index++;
             run=false;
         }
@@ -161,66 +137,36 @@ void IMU_visual::calc_slip_time()
             slip=false;
             index=0;
             slip_time=slip_timer[2]-slip_timer[0];
-
-            slip_d.ori_x=slip_d_val[2].ori_x-slip_d_val[0].ori_x;
-            slip_d.ori_y=slip_d_val[2].ori_y-slip_d_val[0].ori_y;
-            slip_d.ori_z=slip_d_val[2].ori_z-slip_d_val[0].ori_z;
-            slip_d.ori_w=slip_d_val[2].ori_w-slip_d_val[0].ori_w;
-            publish_adjust(slip_d.ori_x,slip_d.ori_y,slip_d.ori_z,slip_d.ori_w);
-            ROS_INFO("change x: %f y: %f z: %f w: %f",slip_d.ori_x,slip_d.ori_y,slip_d.ori_z,slip_d.ori_w);
+            #define Ori slip_d_val[3].orientation 
+            
+            Ori.x=slip_d_val[2].orientation.x-slip_d_val[0].orientation.x;
+            Ori.y=slip_d_val[2].orientation.y-slip_d_val[0].orientation.y;
+            Ori.z=slip_d_val[2].orientation.z-slip_d_val[0].orientation.z;
+            Ori.w=slip_d_val[2].orientation.w-slip_d_val[0].orientation.w;
+            publish_adjust(Ori.x,Ori.y,Ori.z,Ori.w);
+            ROS_INFO("change x: %f y: %f z: %f w: %f",Ori.x,Ori.y,Ori.z,Ori.w);
         }
     }
-
-    // if(abs(curr_dp_th)>_slip_rate)
-    // {
-    //     if(slip==false)
-    //     {
-    //         adjust_diff=prev_th_diff;
-    //         slip=true;
-    //     }
-    //     ROS_WARN("SLIP OCCUR");
-    // }
-    // else
-    // {
-    //     if(slip==true)
-    //     {
-    //         adjust_diff-=curr_th_diff;
-    //         slip_occured=true;
-    //         slip=false;
-    //     }
-    // }
 }
 void IMU_visual::calc_acc()
 {
-    geometry_msgs::Pose temp_ROBOT_=ROBOT_;
-    sensor_msgs::Imu temp_IMU_=IMU_;
-
+    geometry_msgs::Pose temp_ROBOT_=diff_info_.Robot_val;
+    sensor_msgs::Imu temp_IMU_=diff_info_.Imu_val;
     tf::Pose pose;
-    geometry_msgs::Pose temp_pose;
 
-    temp_pose.orientation.x=temp_ROBOT_.orientation.x-temp_IMU_.orientation.x;
-    temp_pose.orientation.y=temp_ROBOT_.orientation.y-temp_IMU_.orientation.y;
-    temp_pose.orientation.z=temp_ROBOT_.orientation.z-temp_IMU_.orientation.z;
-    temp_pose.orientation.w=temp_ROBOT_.orientation.w-temp_IMU_.orientation.w;
-    tf::poseMsgToTF(temp_pose, pose);
-    curr_th_diff=tf::getYaw(pose.getRotation())-init_diff;
-    curr_dp_th=(curr_th_diff-prev_th_diff)*10;
-    prev_dpp_th=curr_dpp_th;
-    curr_dpp_th=(curr_dp_th-prev_dp_th);
 
-    
-    // if(slip_occured==true&&init_finish==true)
-    // {
-    //     ROS_INFO("%f",adjust_diff);
-    //     slip_occured=false;
-    // }
+    diff_info_.curr_Q=return_sub_pose(temp_ROBOT_,temp_IMU_);
+    tf::poseMsgToTF(diff_info_.curr_Q, pose);
+    diff_info_.curr_Q_yaw=tf::getYaw(pose.getRotation())-init_diff;
+    // tf::poseMsgToTF(diff_info_.prev_Q, pose);
+    // diff_info_.prev_Q_yaw=tf::getYaw(pose.getRotation())-init_diff;
 
-    diff.angular.x=curr_th_diff;
-    diff.angular.y=curr_dp_th;
-    diff.angular.z=curr_dpp_th;
+    diff_info_.curr_dQ_yaw=(diff_info_.curr_Q_yaw-diff_info_.prev_Q_yaw)*5;
+    diff_info_.curr_ddQ_yaw=diff_info_.curr_dQ_yaw-diff_info_.prev_dQ_yaw;
 
-    prev_th_diff=curr_th_diff;
-    prev_dp_th=curr_dp_th;
+    diff.angular.x=diff_info_.curr_Q_yaw;
+    diff.angular.y=diff_info_.curr_dQ_yaw;
+    diff.angular.z=diff_info_.curr_ddQ_yaw;
 
     _pub_differ.publish(diff);
 }
@@ -252,9 +198,39 @@ void IMU_visual::publish_adjust(double x,double y, double z, double w)
     _pub_robot_adjust.publish(temp);
     ROS_WARN("ADJUST_Needed");
     fill(slip_timer.begin(),slip_timer.end(),0);
-    
 }
 double IMU_visual::return_current_time()
 {
     return ros::Time::now().toSec();
+}
+geometry_msgs::Pose IMU_visual::return_sub_pose(geometry_msgs::Pose &A, geometry_msgs::Pose &B)
+{
+    geometry_msgs::Pose temp;
+
+    temp.orientation.x=A.orientation.x-B.orientation.x;
+    temp.orientation.y=A.orientation.y-B.orientation.y;
+    temp.orientation.z=A.orientation.z-B.orientation.z;
+    temp.orientation.w=A.orientation.w-B.orientation.w;
+
+    return temp;
+
+}
+geometry_msgs::Pose IMU_visual::return_sub_pose(geometry_msgs::Pose &A, sensor_msgs::Imu &B)
+{
+    geometry_msgs::Pose temp;
+
+    temp.orientation.x=A.orientation.x-B.orientation.x;
+    temp.orientation.y=A.orientation.y-B.orientation.y;
+    temp.orientation.z=A.orientation.z-B.orientation.z;
+    temp.orientation.w=A.orientation.w-B.orientation.w;
+
+    return temp;
+}
+void IMU_visual::turn_curr_to_prev()
+{
+    diff_info_.prev_Q=diff_info_.curr_Q;
+
+    diff_info_.prev_Q_yaw=diff_info_.curr_Q_yaw;
+    diff_info_.prev_dQ_yaw=diff_info_.curr_dQ_yaw;
+    diff_info_.prev_ddQ_yaw=diff_info_.curr_ddQ_yaw;
 }

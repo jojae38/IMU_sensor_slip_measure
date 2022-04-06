@@ -7,41 +7,27 @@
 #include <std_msgs/String.h>
 using namespace std;
 
-struct Map
+struct diff_info
 {
-    int row;
-    int col;
-    int cross;
-    int block_row;
-    int block_col;
-};
+    geometry_msgs::Pose Robot_val;
+    sensor_msgs::Imu Imu_val;
 
-struct IMU_val
-{
-    double ori_x;
-    double ori_y;
-    double ori_z;
-    double ori_w;
-};
+    geometry_msgs::Pose prev_Q;
+    geometry_msgs::Pose curr_Q;
+    double curr_Q_yaw;
+    double prev_Q_yaw;
 
-struct ROBOT_val
-{
-    double ori_x;
-    double ori_y;
-    double ori_z;
-    double ori_w;
-};
+    double curr_dQ_yaw;
+    double prev_dQ_yaw;
 
-struct Color
-{
-    unsigned char B;
-    unsigned char G;
-    unsigned char R;
+    double curr_ddQ_yaw;
+    double prev_ddQ_yaw;
 };
 
 class IMU_visual
 {
     private:
+        // ros
         ros::NodeHandle _nh;
         ros::Publisher _pub_differ;
         ros::Publisher _pub_robot_adjust;
@@ -50,8 +36,9 @@ class IMU_visual
         ros::Subscriber _sub_robot_adjust;
         
         geometry_msgs::Twist diff;
-        geometry_msgs::Pose ROBOT_;
-        sensor_msgs::Imu IMU_;
+
+        diff_info diff_info_;
+        //init
         bool imu_callback;
         bool robot_callback;
         bool init_finish;
@@ -66,28 +53,15 @@ class IMU_visual
         double init_diff;
         double adjust_diff;
         
-        double curr_th_diff;
-        double prev_th_diff;
-       
-        double curr_dp_th;
-        double prev_dp_th;
-
-        double curr_dpp_th;
-        double prev_dpp_th;
-        
         ros::Time start_time;
 
         vector<double> slip_timer;
-        vector<IMU_val> slip_d_val;
-        IMU_val slip_d;
+        vector<sensor_msgs::Imu> slip_d_val;
+        geometry_msgs::Pose slip_d;
         int index;
         double slip_time;
         bool slip_time_measured;
         vector<double> init_th;
-
-        // struct Color word;
-        // struct Color Robot_Color_;
-        // struct Color IMU_Color_;
 
         void update_IMU(const sensor_msgs::Imu::ConstPtr &msg);
         void update_ROBOT(const geometry_msgs::Pose::ConstPtr &msg);
@@ -99,6 +73,10 @@ class IMU_visual
         void run_sequence();
         void publish_adjust(double x,double y, double z, double w);
         double return_current_time();
+        double turn_Quaternion_to_yaw(geometry_msgs::Pose &x,geometry_msgs::Pose &y);
+        geometry_msgs::Pose return_sub_pose(geometry_msgs::Pose &A, geometry_msgs::Pose &B);
+        geometry_msgs::Pose return_sub_pose(geometry_msgs::Pose &A, sensor_msgs::Imu &B);
+        void turn_curr_to_prev();
     public:
         IMU_visual();
         ~IMU_visual();

@@ -1,6 +1,6 @@
 <launch>
   <node name="imu_visualize" pkg="imu_visualize" type="imu_visualize" output="screen">
-    <param name="Slip" value="0.1" />
+    <param name="Slip" value="0.02" />
     <param name="notinit" value ="1"/>
   </node>
 
