@@ -94,29 +94,33 @@ void IMU_visual::update_ROBOT(const nav_msgs::Odometry::ConstPtr &msg)
     diff_info_.Robot_val=*msg;
     robot_callback=true;
     
-    // diff_info_.adj_Robot_val.ppo.x=diff_info_.Robot_val.ppo.x;
-    // diff_info_.adj_Robot_val.ppo.y=diff_info_.Robot_val.ppo.y;
-    // diff_info_.adj_Robot_val.ppo.z=diff_info_.Robot_val.ppo.z;
-    // diff_info_.adj_Robot_val.ppo.w=diff_info_.Robot_val.ppo.w;
+    //testing purpose - not connected to robot
+    diff_info_.adj_Robot_val.ppo.x=diff_info_.Robot_val.ppo.x;
+    diff_info_.adj_Robot_val.ppo.y=diff_info_.Robot_val.ppo.y;
+    diff_info_.adj_Robot_val.ppo.z=diff_info_.Robot_val.ppo.z;
+    diff_info_.adj_Robot_val.ppo.w=diff_info_.Robot_val.ppo.w;
 
-    diff_info_.adj_Robot_val.ppo.x=diff_info_.Robot_val.ppo.x+diff_info_.add_Robot_val.ppo.x;
-    diff_info_.adj_Robot_val.ppo.y=diff_info_.Robot_val.ppo.y+diff_info_.add_Robot_val.ppo.y;
-    diff_info_.adj_Robot_val.ppo.z=diff_info_.Robot_val.ppo.z+diff_info_.add_Robot_val.ppo.z;
-    diff_info_.adj_Robot_val.ppo.w=diff_info_.Robot_val.ppo.w+diff_info_.add_Robot_val.ppo.w;
-// ROS_INFO("aa");
-    // diff_info_.add_Robot_val.ppo.x=0;
-    // diff_info_.add_Robot_val.ppo.y=0;
-    // diff_info_.add_Robot_val.ppo.z=0;
-    // diff_info_.add_Robot_val.ppo.w=0;
-
+    //connected to robot
+    // diff_info_.adj_Robot_val.ppo.x=diff_info_.Robot_val.ppo.x+diff_info_.add_Robot_val.ppo.x;
+    // diff_info_.adj_Robot_val.ppo.y=diff_info_.Robot_val.ppo.y+diff_info_.add_Robot_val.ppo.y;
+    // diff_info_.adj_Robot_val.ppo.z=diff_info_.Robot_val.ppo.z+diff_info_.add_Robot_val.ppo.z;
+    // diff_info_.adj_Robot_val.ppo.w=diff_info_.Robot_val.ppo.w+diff_info_.add_Robot_val.ppo.w;
 }
 void IMU_visual::adjust_ROBOT(const geometry_msgs::Pose::ConstPtr &msg)
 {
+    //testing purpose - not connected to robot
     diff_info_.Robot_val.ppo.x+=msg->orientation.x;
     diff_info_.Robot_val.ppo.y+=msg->orientation.y;
     diff_info_.Robot_val.ppo.z+=msg->orientation.z;
     diff_info_.Robot_val.ppo.w+=msg->orientation.w;
-    // adjust_occured=true;
+
+    //connected to robot
+    // diff_info_.add_Robot_val.ppo.x+=msg->orientation.x;
+    // diff_info_.add_Robot_val.ppo.y+=msg->orientation.y;
+    // diff_info_.add_Robot_val.ppo.z+=msg->orientation.z;
+    // diff_info_.add_Robot_val.ppo.w+=msg->orientation.w;
+
+    adjust_occured=true;
 }
 void IMU_visual::calc_slip_time()
 {
@@ -170,18 +174,19 @@ void IMU_visual::calc_slip_time()
 }
 void IMU_visual::calc_acc()
 {
-    nav_msgs::Odometry temp_ROBOT_=diff_info_.adj_Robot_val;
+    //testing - diff_info_.Robot_val | Real - diff_info_.adj_Robot_val
+    nav_msgs::Odometry temp_ROBOT_=diff_info_.Robot_val;
     sensor_msgs::Imu temp_IMU_=diff_info_.Imu_val;
     tf::Pose pose;
 
     diff_info_.curr_Q=return_sub_pose(temp_ROBOT_,temp_IMU_);
     tf::poseMsgToTF(diff_info_.curr_Q, pose);
     diff_info_.curr_Q_yaw=tf::getYaw(pose.getRotation())-init_diff;
-    // if(adjust_occured)
-    // {
-    //     diff_info_.prev_Q_yaw=diff_info_.curr_Q_yaw;
-    //     adjust_occured=false;
-    // }
+    if(adjust_occured)
+    {
+        diff_info_.prev_Q_yaw=diff_info_.curr_Q_yaw;
+        adjust_occured=false;
+    }
         if(diff_info_.curr_Q_yaw>Gap&&diff_info_.prev_Q_yaw<-Gap)
         {
             diff_info_.curr_Q_yaw=diff_info_.prev_Q_yaw;
