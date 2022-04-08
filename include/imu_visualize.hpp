@@ -4,34 +4,44 @@
 #include <tf/transform_broadcaster.h>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/Imu.h>
-#include <nav_msgs/Odometry.h>
 #include <std_msgs/String.h>
 using namespace std;
-#define ppo pose.pose.orientation
-const double Gap = 3.1;
-struct diff_info
+
+struct Map
 {
-    nav_msgs::Odometry Robot_val;
-    nav_msgs::Odometry add_Robot_val;
-    nav_msgs::Odometry adj_Robot_val;
-    sensor_msgs::Imu Imu_val;
+    int row;
+    int col;
+    int cross;
+    int block_row;
+    int block_col;
+};
 
-    geometry_msgs::Pose prev_Q;
-    geometry_msgs::Pose curr_Q;
-    double curr_Q_yaw;
-    double prev_Q_yaw;
+struct IMU_val
+{
+    double ori_x;
+    double ori_y;
+    double ori_z;
+    double ori_w;
+};
 
-    double curr_dQ_yaw;
-    double prev_dQ_yaw;
+struct ROBOT_val
+{
+    double ori_x;
+    double ori_y;
+    double ori_z;
+    double ori_w;
+};
 
-    double curr_ddQ_yaw;
-    double prev_ddQ_yaw;
+struct Color
+{
+    unsigned char B;
+    unsigned char G;
+    unsigned char R;
 };
 
 class IMU_visual
 {
     private:
-        // ros
         ros::NodeHandle _nh;
         ros::Publisher _pub_differ;
         ros::Publisher _pub_robot_adjust;
@@ -40,9 +50,8 @@ class IMU_visual
         ros::Subscriber _sub_robot_adjust;
         
         geometry_msgs::Twist diff;
-
-        diff_info diff_info_;
-        //init
+        geometry_msgs::Pose ROBOT_;
+        sensor_msgs::Imu IMU_;
         bool imu_callback;
         bool robot_callback;
         bool init_finish;
@@ -50,8 +59,6 @@ class IMU_visual
 
         bool slip;
         bool slip_occured;
-
-        bool adjust_occured;
         
         double _slip_rate;
         int _no_init;
@@ -59,19 +66,31 @@ class IMU_visual
         double init_diff;
         double adjust_diff;
         
+        double curr_th_diff;
+        double prev_th_diff;
+       
+        double curr_dp_th;
+        double prev_dp_th;
+
+        double curr_dpp_th;
+        double prev_dpp_th;
         
         ros::Time start_time;
 
         vector<double> slip_timer;
-        vector<sensor_msgs::Imu> slip_d_val;
-        geometry_msgs::Pose slip_d;
+        vector<IMU_val> slip_d_val;
+        IMU_val slip_d;
         int index;
         double slip_time;
         bool slip_time_measured;
         vector<double> init_th;
 
+        // struct Color word;
+        // struct Color Robot_Color_;
+        // struct Color IMU_Color_;
+
         void update_IMU(const sensor_msgs::Imu::ConstPtr &msg);
-        void update_ROBOT(const nav_msgs::Odometry::ConstPtr &msg);
+        void update_ROBOT(const geometry_msgs::Pose::ConstPtr &msg);
         void adjust_ROBOT(const geometry_msgs::Pose::ConstPtr &msg);
         void calc_slip_time();
         void calc_acc();
@@ -79,12 +98,7 @@ class IMU_visual
         void get_init_val();
         void run_sequence();
         void publish_adjust(double x,double y, double z, double w);
-        void show_slip();
         double return_current_time();
-        double turn_Quaternion_to_yaw(geometry_msgs::Pose &x,geometry_msgs::Pose &y);
-        geometry_msgs::Pose return_sub_pose(geometry_msgs::Pose &A, geometry_msgs::Pose &B);
-        geometry_msgs::Pose return_sub_pose(nav_msgs::Odometry &A, sensor_msgs::Imu &B);
-        void turn_curr_to_prev();
     public:
         IMU_visual();
         ~IMU_visual();
