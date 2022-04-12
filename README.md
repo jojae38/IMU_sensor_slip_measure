@@ -32,7 +32,9 @@ IMU와 로봇 간의 각도 차이가 1.943정도 나오기에 제거해주는 �
 ![image](https://user-images.githubusercontent.com/58541374/160035045-2b010514-8ba8-4992-8e84-7172cca5cd06.png)
 
  * IMU와 로봇의 각도 정확도
-![image](https://user-images.githubusercontent.com/58541374/162855774-c7ade931-85c0-4abf-877c-b2b891261bcd.png)
+
+![image](https://user-images.githubusercontent.com/58541374/162864692-f9a2fd35-83e7-43f0-817e-90ff6f78e711.png)
+
 
 
 #개선사항
