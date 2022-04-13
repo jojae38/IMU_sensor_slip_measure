@@ -1,7 +1,9 @@
 <launch>
   <node name="imu_visualize" pkg="imu_visualize" type="imu_visualize" output="screen">
-    <param name="Slip" value="0.05" />
-    <param name="notinit" value ="1"/>
+    <param name="Ros_rate" value="10" />
+    <param name="Slip_ddq" value="0.75" />
+    <param name="notinit" value ="0"/>
+    <param name="Slip_Delay" value ="4"/>
   </node>
 
   <!-- <node name="settings_script" pkg="serialIMU" type="initialSettings.sh" output="screen"/> -->
