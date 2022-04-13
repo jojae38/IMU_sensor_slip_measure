@@ -83,3 +83,6 @@ IMU와 로봇 간의 각도 차이가 1.943정도 나오기에 제거해주는 �
 <br>Case 2: 로봇은 업데이트 되었지만 IMU는 업데이트 되지  경우 
 <br>Case 3: 모두 업데이트 된 경우
 <br>->결과 큰 차이가 없다. 근본적인 식 조정이 필요할 것 같다.
+<br> (참고자료)
+http://wiki.ros.org/message_filters
+https://gist.github.com/tdenewiler/e2172f628e49ab633ef2786207793336
