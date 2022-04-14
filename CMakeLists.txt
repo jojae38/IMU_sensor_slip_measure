@@ -2,17 +2,18 @@ cmake_minimum_required(VERSION 3.0.2)
 project(imu_visualize)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-cv_bridge
+  cv_bridge
   roscpp
   std_msgs
+  message_filters
 )
-
+find_package(OpenCV REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -105,7 +106,7 @@ cv_bridge
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES IMU_visualize
-#  CATKIN_DEPENDS roscpp std_msgs
+ CATKIN_DEPENDS roscpp std_msgs message_filters
 #  DEPENDS system_lib
 )
 
@@ -119,6 +120,7 @@ include_directories(
 # include
   /home/cona/catkin_ws/src/imu_visualize/include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -209,5 +211,16 @@ add_executable(imu_visualize src/imu_main.cpp src/imu_visualize.cpp)
 target_link_libraries(
   imu_visualize
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )
 add_dependencies(imu_visualize ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
+# cmake_minimum_required(VERSION 3.0)
+
+# project(project)
+# find_package( OpenCV REQUIRED )
+# include_directories(${OpenCV_INCLUDE_DIRS})
+# message("OpenCV_INCLUDE_DIRS: " ${OpenCV_INCLUDE_DIRS})
+# add_executable(executableFileName main.cpp)
+# target_link_libraries( executableFileName ${OpenCV_LIBS} )
