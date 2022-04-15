@@ -7,6 +7,8 @@ IMU_visual::IMU_visual()
     _nh.param("Slip_ddq", _slip_rate, 0.3);
     _nh.param("notinit", _no_init, 1);
     _nh.param("Slip_Delay", Slip_Delay, 1);
+    _nh.param("Slip_dq_over", Slip_dq_over, 0.5);
+
     slip=false;
     slip_occured=false;
     init_finish=false;
@@ -28,8 +30,8 @@ IMU_visual::IMU_visual()
     vector<sensor_msgs::Imu> empty_con2(3);
     slip_d_val=empty_con2;
 
-    vector<double> empty_con3(Slip_Delay);
-    Q_yaw_container=empty_con3;
+    vector<double> empty_con3(Slip_Delay+1);
+    dQ_yaw_container=empty_con3;
     memset(&diff_info_,0,sizeof(struct diff_info));
     // _pub_robot_adjust=_nh.advertise<geometry_msgs::Pose>("/robot_adjust_byslip",1);
     _pub_differ=_nh.advertise<geometry_msgs::Twist>("/acc_diff",1);
@@ -70,7 +72,7 @@ void IMU_visual::run_sequence()
             }
             else
             {
-                calc_slip_time();   
+                calc_slip_time_2();   
             }
             show_slip();
             turn_curr_to_prev();
@@ -82,7 +84,7 @@ void IMU_visual::run_sequence()
 void IMU_visual::get_init_val()
 {
     if(init_finish==false)
-    {   ROS_INFO("dd");
+    {   
         if(init_th.size()<=Ros_rate)
         {
             init_th.push_back(diff_info_.curr_Q_yaw);
@@ -184,13 +186,100 @@ void IMU_visual::calc_slip_time()
         }
     }
 }
+void IMU_visual::calc_slip_time_2()
+{
+    if(slip==false)
+    {
+        if(abs(diff_info_.curr_dQ_yaw)>_slip_rate)//?
+        {
+            slip=true;
+            slip_timer[0]=return_current_time();
+            slip_yaw[0]=diff_info_.curr_Q_yaw;
+            slip_d_val[0]=diff_info_.Imu_val;
+            slip_contain_.dQ_count=2;
+            slip_contain_.dQ_sum+=(diff_info_.prev_dQ_yaw+diff_info_.curr_dQ_yaw)/float(Slip_Delay);
+            index++;
+        }
+    }
+    else
+    {   
+        if(slip_contain_.dQ_count>=4)
+        {
+            if(abs(slip_contain_.dQ_sum)>Slip_dq_over)
+            {
+                slip_occured=true;
+            }
+            else
+            {
+                slip=false;
+                slip_contain_.dQ_sum=0;
+                slip_contain_.dQ_count=0;
+            }
+            // index++;
+            
+            // slip_yaw[index]=diff_info_.curr_Q_yaw;
+            // slip_d_val[index]=diff_info_.Imu_val;
+        }
+        else
+        {
+            slip_contain_.dQ_count++;
+            slip_contain_.dQ_sum+=diff_info_.curr_dQ_yaw/float(Slip_Delay);
+        }
+        
+        if(slip_contain_.dQ_sum>0&&slip==true)
+        {
+            if(diff_info_.prev_dQ_yaw>0&&diff_info_.curr_dQ_yaw<=0)
+            {
+                slip_contain_.end_time=return_current_time();
+                slip_contain_.end_Q_yaw=diff_info_.curr_Q_yaw;
+            }
+        }
+        else if(slip_contain_.dQ_sum<0&&slip==true)
+        {
+            if(diff_info_.prev_dQ_yaw<0&&diff_info_.curr_dQ_yaw>=0)
+            {
+                slip_contain_.end_time=return_current_time();
+                slip_contain_.end_Q_yaw=diff_info_.curr_Q_yaw;
+            }
+        }
+        else if(diff_info_.curr_dQ_yaw==0&&slip==true)
+        {
+            slip_contain_.end_time=return_current_time();
+            slip_contain_.end_Q_yaw=diff_info_.curr_Q_yaw;
+        }
+    }
+    if(slip_occured==true&&slip_contain_.end_time!=0)
+    {   
+        // slip_time=slip_timer[2]-slip_timer[0];
+        diff_info_.adjust_yaw=slip_contain_.end_Q_yaw-slip_contain_.start_Q_yaw;
+
+        diff_info_.slip_d_val.orientation.x=slip_d_val[2].orientation.x-slip_d_val[0].orientation.x;
+        diff_info_.slip_d_val.orientation.y=slip_d_val[2].orientation.y-slip_d_val[0].orientation.y;
+        diff_info_.slip_d_val.orientation.z=slip_d_val[2].orientation.z-slip_d_val[0].orientation.z;
+        diff_info_.slip_d_val.orientation.w=slip_d_val[2].orientation.w-slip_d_val[0].orientation.w;
+
+        diff_info_.adjust_d_val.orientation.x+=diff_info_.slip_d_val.orientation.x;
+        diff_info_.adjust_d_val.orientation.y+=diff_info_.slip_d_val.orientation.y;
+        diff_info_.adjust_d_val.orientation.z+=diff_info_.slip_d_val.orientation.z;
+        diff_info_.adjust_d_val.orientation.w+=diff_info_.slip_d_val.orientation.w;
+        
+        index=0;
+        slip=false;
+        slip_occured=false;
+        slip_contain_.end_time=0;
+        tf::Pose pose;
+        tf::poseMsgToTF(return_pose(diff_info_.adjust_d_val), pose);
+        diff_info_.adjust_yaw=tf::getYaw(pose.getRotation());
+        ROS_INFO("change yaw: %f",diff_info_.adjust_yaw);
+    }
+}
 void IMU_visual::calc_acc()
 {
     //testing - diff_info_.Robot_val | Real - diff_info_.adj_Robot_val
     nav_msgs::Odometry temp_ROBOT_=diff_info_.Robot_val;
     sensor_msgs::Imu temp_IMU_=diff_info_.Imu_val;
     tf::Pose pose;
-// -init_diff;
+    // -init_diff;
 
 
     tf::poseMsgToTF(return_pose(diff_info_.Robot_val), pose);
@@ -286,28 +375,6 @@ double IMU_visual::return_current_time()
 {
     return ros::Time::now().toSec();
 }
-geometry_msgs::Pose IMU_visual::return_sub_pose(geometry_msgs::Pose &A, geometry_msgs::Pose &B)
-{
-    geometry_msgs::Pose temp;
-
-    temp.orientation.x=A.orientation.x-B.orientation.x;
-    temp.orientation.y=A.orientation.y-B.orientation.y;
-    temp.orientation.z=A.orientation.z-B.orientation.z;
-    temp.orientation.w=A.orientation.w-B.orientation.w;
-
-    return temp;
-}
-geometry_msgs::Pose IMU_visual::return_sub_pose(nav_msgs::Odometry &A, sensor_msgs::Imu &B)
-{
-    geometry_msgs::Pose temp;
-
-    temp.orientation.x=A.pose.pose.orientation.x-B.orientation.x;
-    temp.orientation.y=A.pose.pose.orientation.y-B.orientation.y;
-    temp.orientation.z=A.pose.pose.orientation.z-B.orientation.z;
-    temp.orientation.w=A.pose.pose.orientation.w-B.orientation.w;
-
-    return temp;
-}
 void IMU_visual::turn_curr_to_prev()
 {
     diff_info_.prev_Q_yaw=diff_info_.curr_Q_yaw;
@@ -352,18 +419,6 @@ geometry_msgs::Pose IMU_visual::return_pose(nav_msgs::Odometry &A)
     temp.orientation.w=A.pose.pose.orientation.w;
     return temp;
 }
-
-geometry_msgs::Pose IMU_visual::return_plus_pose(nav_msgs::Odometry &A, sensor_msgs::Imu &B)
-{
-    geometry_msgs::Pose temp;
-
-    temp.orientation.x=A.pose.pose.orientation.x+B.orientation.x;
-    temp.orientation.y=A.pose.pose.orientation.y+B.orientation.y;
-    temp.orientation.z=A.pose.pose.orientation.z+B.orientation.z;
-    temp.orientation.w=A.pose.pose.orientation.w+B.orientation.w;
-
-    return temp;
-}
 void IMU_visual::init_prev()
 {
     if(first_on)
@@ -403,10 +458,5 @@ void IMU_visual::callback(const sensor_msgs::ImuConstPtr &Imu,const nav_msgs::Od
     diff_info_.Imu_val=*Imu;
     imu_callback=true;
     robot_callback=true;
-    
     count++;
-    ROS_INFO("%d",count);
-    // ROS_INFO("z: %f w: %f",diff_info_.Robot_val.pose.pose.orientation.z,diff_info_.Robot_val.pose.pose.orientation.w);
-    // ROS_INFO("z: %f w: %f",diff_info_.Imu_val.orientation.z,diff_info_.Imu_val.orientation.w);      
-
 }

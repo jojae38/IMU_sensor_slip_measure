@@ -47,6 +47,16 @@ struct diff_info
     double prev_ddQ_yaw;
 };
 
+struct slip_contain
+{
+    double start_time;
+    double end_time;
+    double start_Q_yaw;
+    double end_Q_yaw;
+    double dQ_sum;
+    int dQ_count;
+};
+
 class IMU_visual
 {   public:
         IMU_visual();
@@ -71,6 +81,7 @@ class IMU_visual
         bool timer_start;
 
         bool slip;
+    
         bool slip_occured;
 
         bool adjust_occured;
@@ -78,8 +89,10 @@ class IMU_visual
         bool first_on;
         
         double _slip_rate;
+        double Slip_dq_over;
         int _no_init;
         int Slip_Delay;
+        
         int Slip_Delay_index;
         int Ros_rate;
         
@@ -87,10 +100,10 @@ class IMU_visual
         double adjust_diff;
         
         ros::Time start_time;
-
+        slip_contain slip_contain_;
         vector<double> slip_timer;
         vector<double> slip_yaw;
-        vector<double> Q_yaw_container;
+        vector<double> dQ_yaw_container;
         vector<sensor_msgs::Imu> slip_d_val;
 
         message_filters::Subscriber<sensor_msgs::Imu> imu_data_sub;
@@ -105,12 +118,14 @@ class IMU_visual
         double slip_time;
         bool slip_time_measured;
         int count;
+        int slip_count;
         vector<double> init_th;
 
         void update_IMU(const sensor_msgs::Imu::ConstPtr &msg);
         void update_ROBOT(const nav_msgs::Odometry::ConstPtr &msg);
         void adjust_ROBOT(const geometry_msgs::Pose::ConstPtr &msg);
         void calc_slip_time();
+        void calc_slip_time_2();
         void calc_acc();
         bool time_duration(double sec);
         void get_init_val();
@@ -122,13 +137,7 @@ class IMU_visual
         void calc_modified_yaw();
         double return_current_time();
         double turn_Quaternion_to_yaw(geometry_msgs::Pose &x,geometry_msgs::Pose &y);
-        geometry_msgs::Pose return_sub_pose(geometry_msgs::Pose &A, geometry_msgs::Pose &B);
-        geometry_msgs::Pose return_sub_pose(nav_msgs::Odometry &A, sensor_msgs::Imu &B);
-        geometry_msgs::Pose return_plus_pose(nav_msgs::Odometry &A, sensor_msgs::Imu &B);
-
         geometry_msgs::Pose return_pose(sensor_msgs::Imu &A);
         geometry_msgs::Pose return_pose(nav_msgs::Odometry &A);
-        
-        
         void turn_curr_to_prev();
 };

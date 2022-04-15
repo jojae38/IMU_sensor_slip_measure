@@ -2,6 +2,7 @@
   <node name="imu_visualize" pkg="imu_visualize" type="imu_visualize" output="screen">
     <param name="Ros_rate" value="10" />
     <param name="Slip_ddq" value="0.75" />
+    <param name="Slip_dq_over" value="0.75" />
     <param name="notinit" value ="0"/>
     <param name="Slip_Delay" value ="4"/>
   </node>
