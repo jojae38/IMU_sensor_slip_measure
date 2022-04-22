@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
 #include <tf/transform_broadcaster.h>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/Imu.h>
@@ -10,6 +11,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
+
 using namespace std;
 using namespace message_filters;
 const double PI = 3.141592;
@@ -56,6 +58,22 @@ struct slip_contain
     double dQ_sum;
     int dQ_count;
 };
+struct rqt_plot
+{   
+    cv::Mat graph;
+    int gird_block_y;
+    int grid_block_x;
+    int x_size;
+    int y_size;
+    int pixel_x_size;
+    int pixel_y_size;
+};
+struct line
+{
+    int data_max;
+    int index;
+    vector<cv::Point> dst;
+};
 
 class IMU_visual
 {   public:
@@ -66,13 +84,13 @@ class IMU_visual
         // ros
         ros::NodeHandle _nh;
         ros::Publisher _pub_differ;
-        ros::Publisher _pub_robot_adjust;
+        ros::Publisher _publish_slip;
+
         ros::Subscriber _sub_imu_data;
         ros::Subscriber _sub_robot_data;
-        ros::Subscriber _sub_robot_adjust;
-        
-        geometry_msgs::Twist diff;
 
+        geometry_msgs::Twist diff;
+        rqt_plot rqt_plot_;
         diff_info diff_info_;
         //init
         bool imu_callback;
@@ -81,21 +99,25 @@ class IMU_visual
         bool timer_start;
 
         bool slip;
-    
         bool slip_occured;
-
+        bool slip_start;
+        bool slip_end;
         bool adjust_occured;
-
         bool first_on;
         
+        int prev_color;
+        int curr_color;
+
         double _slip_rate;
         double Slip_dq_over;
         int _no_init;
+        int _do_visualize;
+        int _visual_length;
         int Slip_Delay;
         
         int Slip_Delay_index;
         int Ros_rate;
-        
+        vector<int> time;
         double init_diff;
         double adjust_diff;
         
@@ -103,16 +125,25 @@ class IMU_visual
         slip_contain slip_contain_;
         vector<double> slip_timer;
         vector<double> slip_yaw;
-        vector<double> dQ_yaw_container;
+        int time_pos;
+
+        line Q_line;
+        line dQ_line;
+        line ddQ_line;
+        line Robot_line;
+        line Imu_line;
+
         vector<sensor_msgs::Imu> slip_d_val;
 
         message_filters::Subscriber<sensor_msgs::Imu> imu_data_sub;
         message_filters::Subscriber<nav_msgs::Odometry> robot_data_sub;
-
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Imu, nav_msgs::Odometry> MySyncPolicy;
         typedef message_filters::Synchronizer<MySyncPolicy> Sync;
-        // typedef message_filters::Synchronizer<MySyncPolicy> Sync;
         boost::shared_ptr<Sync> sync_;
+
+        string imu_topic_name;
+        string robot_topic_name;
+        string publish_slip_topic_name;
 
         int index;
         double slip_time;
@@ -120,6 +151,16 @@ class IMU_visual
         int count;
         int slip_count;
         vector<double> init_th;
+
+        //filter
+        vector<double> filter_array;
+        vector<double> Robot_val_array;
+        int filter_size;
+
+        //state
+        string state_val;
+        double slip_Isth_val;
+        double slip_Ieth_val;
 
         void update_IMU(const sensor_msgs::Imu::ConstPtr &msg);
         void update_ROBOT(const nav_msgs::Odometry::ConstPtr &msg);
@@ -140,4 +181,13 @@ class IMU_visual
         geometry_msgs::Pose return_pose(sensor_msgs::Imu &A);
         geometry_msgs::Pose return_pose(nav_msgs::Odometry &A);
         void turn_curr_to_prev();
+        void rqt_plot_demo();
+        void rqt_plot_update_line(line &line_,double val);
+        void rqt_plot_line(cv::Mat &graph,line &line_,uchar B,uchar G,uchar R);
+        void rqt_plot_grid(cv::Mat &graph);
+        void rqt_plot_time_line(cv::Mat &graph);
+        void rqt_plot_val_text(cv::Mat &graph);
+        void rqt_plot_simple_time_line(cv::Mat &graph);
+        void publish_slip_value();
+        void determine_collapse();
 };
